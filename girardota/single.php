@@ -60,8 +60,12 @@ while ( have_posts() ) :
 			<div class="entry-content"><?php the_content(); ?></div>
 			<div class="gt-share">
 				<strong>Compartir:</strong>
-				<a href="<?php echo esc_url( 'https://wa.me/?text=' . rawurlencode( get_the_title() . ' ' . get_permalink() ) ); ?>" target="_blank" rel="noopener">WhatsApp</a>
-				<a href="<?php echo esc_url( 'https://www.facebook.com/sharer/sharer.php?u=' . rawurlencode( get_permalink() ) ); ?>" target="_blank" rel="noopener">Facebook</a>
+				<?php
+				// Enlace público fijo en https://girardota.com.co (los puntos van como %2E para que no se reescriban).
+				$gt_share = str_replace( '.', '%2E', rawurlencode( 'https://girardota.com.co' . wp_make_link_relative( get_permalink() ) ) );
+				?>
+				<a href="https://wa.me/?text=<?php echo esc_attr( rawurlencode( get_the_title() . ' ' ) . $gt_share ); ?>" target="_blank" rel="noopener">WhatsApp</a>
+				<a href="https://www.facebook.com/sharer/sharer.php?u=<?php echo esc_attr( $gt_share ); ?>" target="_blank" rel="noopener">Facebook</a>
 			</div>
 		</article>
 		<?php

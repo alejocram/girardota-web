@@ -200,3 +200,33 @@ add_action( 'wp_head', function () {
 add_filter( 'document_title_separator', function () {
 	return '·';
 } );
+
+/*
+ * Marca fija "Girardota.com.co".
+ * Los puntos de la marca se escriben como entidad HTML (&#46;) para que ningún proxy o
+ * dominio de vista previa la reemplace al servir la página. El navegador la muestra igual.
+ * Aplica a textos, al enlace de Facebook y a los mensajes de WhatsApp. Las URLs del sitio
+ * (http://girardota.com.co/...) no se tocan.
+ */
+function gt_brand_protect( $html ) {
+	$parts = preg_split( '#(<script\b[^>]*>.*?</script>)#is', $html, -1, PREG_SPLIT_DELIM_CAPTURE );
+	foreach ( $parts as $i => $part ) {
+		if ( 1 === $i % 2 ) {
+			continue; // Bloques <script>: sin cambios.
+		}
+		$part        = str_replace(
+			array( 'facebook.com/girardota.com.co', '>girardota.com.co<' ),
+			array( 'facebook.com/girardota&#46;com&#46;co', '>girardota&#46;com&#46;co<' ),
+			$part
+		);
+		$parts[ $i ] = str_replace( 'Girardota.com.co', 'Girardota&#46;com&#46;co', $part );
+	}
+	return implode( '', $parts );
+}
+
+add_action( 'template_redirect', function () {
+	if ( is_admin() || is_feed() || wp_doing_ajax() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
+		return;
+	}
+	ob_start( 'gt_brand_protect' );
+}, 0 );
