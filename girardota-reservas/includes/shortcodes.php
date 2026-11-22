@@ -210,6 +210,8 @@ add_shortcode( 'gt_contacto', function () {
 		echo '<div class="gt-alert gt-alert--ok">¡Gracias! Recibimos tu mensaje y te responderemos pronto.</div>';
 	} elseif ( 'error' === $estado ) {
 		echo '<div class="gt-alert gt-alert--error">No pudimos enviar tu mensaje. Revisa los campos o escríbenos por WhatsApp.</div>';
+	} elseif ( 'telefono' === $estado ) {
+		echo '<div class="gt-alert gt-alert--error">Revisa el celular: elige el indicativo del país y escribe el número local con 7 a 12 dígitos, sin espacios ni indicativo.</div>';
 	}
 	?>
 	<form class="gt-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
@@ -220,16 +222,29 @@ add_shortcode( 'gt_contacto', function () {
 			<label>Nombre<input type="text" name="gt_nombre" required maxlength="100"></label>
 			<label>Correo electrónico<input type="email" name="gt_email" required maxlength="150"></label>
 		</div>
-		<div class="gt-form__row">
-			<label>Celular / WhatsApp<input type="tel" name="gt_tel" maxlength="30"></label>
-			<label>Motivo
-				<select name="gt_motivo">
-					<option>Quiero ser aliado (alojamiento, tour o restaurante)</option>
-					<option>Publicar un evento</option>
-					<option>Otro</option>
-				</select>
-			</label>
-		</div>
+		<fieldset class="gt-phone">
+			<legend>Celular / WhatsApp</legend>
+			<div class="gt-phone__fields">
+				<label><span class="screen-reader-text">Indicativo del país</span>
+					<select name="gt_tel_pais" autocomplete="tel-country-code">
+						<?php foreach ( gt_country_codes() as $iso => $c ) : ?>
+							<option value="<?php echo esc_attr( $iso ); ?>" <?php selected( $iso, 'CO' ); ?>>+<?php echo esc_html( $c[1] . ' ' . $c[0] ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</label>
+				<label><span class="screen-reader-text">Número de celular sin indicativo</span>
+					<input type="tel" name="gt_tel" inputmode="numeric" autocomplete="tel-national" pattern="[0-9]{7,12}" minlength="7" placeholder="3001234567" title="Escribe de 7 a 12 dígitos, sin espacios ni indicativo." oninput="this.value=this.value.replace(/\D/g,'').slice(0,12)">
+				</label>
+			</div>
+			<small class="gt-phone__hint">Número local de 7 a 12 dígitos, sin espacios ni indicativo.</small>
+		</fieldset>
+		<label>Motivo
+			<select name="gt_motivo">
+				<option>Quiero ser aliado (alojamiento, tour o restaurante)</option>
+				<option>Publicar un evento</option>
+				<option>Otro</option>
+			</select>
+		</label>
 		<label>Mensaje<textarea name="gt_mensaje" rows="5" required maxlength="3000"></textarea></label>
 		<label class="gt-check"><input type="checkbox" name="gt_datos" value="1" required> <span>Autorizo el tratamiento de mis datos personales según la <a href="<?php echo esc_url( home_url( '/politica-de-privacidad/' ) ); ?>">política de privacidad</a>.</span></label>
 		<button type="submit" class="gt-btn">Enviar mensaje</button>
@@ -237,6 +252,28 @@ add_shortcode( 'gt_contacto', function () {
 	<?php
 	return ob_get_clean();
 } );
+
+/**
+ * Arma el número en formato E.164 (+[indicativo][número], máximo 15 dígitos).
+ * Devuelve '' si no se escribió número y false si no es válido.
+ */
+function gt_phone_e164( $iso, $local ) {
+	$local = preg_replace( '/\D/', '', (string) $local );
+	if ( '' === $local ) {
+		return '';
+	}
+	$codes = gt_country_codes();
+	$iso   = strtoupper( sanitize_key( $iso ) );
+	if ( ! isset( $codes[ $iso ] ) ) {
+		return false;
+	}
+	$len = strlen( $local );
+	if ( $len < 7 || $len > 12 ) {
+		return false;
+	}
+	$e164 = $codes[ $iso ][1] . $local;
+	return strlen( $e164 ) <= 15 ? '+' . $e164 : false;
+}
 
 function gt_handle_contacto() {
 	$back = wp_get_referer() ? wp_get_referer() : home_url( '/nosotros/' );
@@ -247,14 +284,19 @@ function gt_handle_contacto() {
 	}
 	$nombre  = sanitize_text_field( wp_unslash( $_POST['gt_nombre'] ?? '' ) );
 	$email   = sanitize_email( wp_unslash( $_POST['gt_email'] ?? '' ) );
-	$tel     = sanitize_text_field( wp_unslash( $_POST['gt_tel'] ?? '' ) );
+	$tel     = gt_phone_e164( wp_unslash( $_POST['gt_tel_pais'] ?? 'CO' ), wp_unslash( $_POST['gt_tel'] ?? '' ) );
 	$motivo  = sanitize_text_field( wp_unslash( $_POST['gt_motivo'] ?? '' ) );
 	$mensaje = sanitize_textarea_field( wp_unslash( $_POST['gt_mensaje'] ?? '' ) );
 	if ( ! $nombre || ! is_email( $email ) || ! $mensaje || empty( $_POST['gt_datos'] ) ) {
 		wp_safe_redirect( add_query_arg( 'contacto', 'error', $back ) . '#contacto' );
 		exit;
 	}
-	$body = "Nombre: $nombre\nCorreo: $email\nCelular: $tel\nMotivo: $motivo\n\n$mensaje";
+	if ( false === $tel ) {
+		wp_safe_redirect( add_query_arg( 'contacto', 'telefono', $back ) . '#contacto' );
+		exit;
+	}
+	$cel  = $tel ? $tel . ' (WhatsApp: https://wa.me/' . ltrim( $tel, '+' ) . ')' : 'No indicado';
+	$body = "Nombre: $nombre\nCorreo: $email\nCelular: $cel\nMotivo: $motivo\n\n$mensaje";
 	$ok   = wp_mail( get_option( 'admin_email' ), '[Girardota.com.co] ' . $motivo . ' — ' . $nombre, $body, array( 'Reply-To: ' . $nombre . ' <' . $email . '>' ) );
 	wp_safe_redirect( add_query_arg( 'contacto', $ok ? 'ok' : 'error', $back ) . '#contacto' );
 	exit;

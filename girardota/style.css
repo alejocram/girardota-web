@@ -301,6 +301,13 @@ p { margin: 0 0 1em; }
 .gt-check input { margin-top: 5px; }
 .gt-hp { position: absolute; left: -9999px; }
 #contacto { scroll-margin-top: 90px; }
+.gt-phone { border: 0; padding: 0; margin: 0 0 14px; min-width: 0; }
+.gt-phone legend { font-weight: 600; font-size: .9rem; padding: 0; margin-bottom: 6px; }
+.gt-phone__fields { display: grid; grid-template-columns: minmax(0, 13rem) minmax(0, 1fr); gap: 10px; }
+.gt-phone__fields label { margin: 0; }
+.gt-phone__fields select, .gt-phone__fields input { margin-top: 0 !important; }
+.gt-phone__hint { display: block; color: var(--gris); font-size: .82rem; margin-top: 6px; }
+.gt-form input:user-invalid { border-color: #c0412a; }
 .gt-alert { padding: 14px 18px; border-radius: 12px; margin-bottom: 18px; }
 .gt-alert--ok { background: #e3f4e8; color: #1c5a32; }
 .gt-alert--error { background: #fde8e4; color: #8a2a17; }
@@ -445,6 +452,7 @@ p { margin: 0 0 1em; }
 	.gt-quick { grid-template-columns: 1fr; }
 	.gt-trust ul { grid-template-columns: 1fr; }
 	.gt-form__row, .gt-booking__row { grid-template-columns: 1fr; gap: 0; }
+	.gt-phone__fields { grid-template-columns: minmax(0, 9.5rem) minmax(0, 1fr); }
 	.gt-footer__grid { grid-template-columns: 1fr; }
 	.gt-event a { grid-template-columns: 1fr auto; }
 	.gt-event__date { grid-column: 1 / -1; }

@@ -18,6 +18,7 @@ define( 'GT_RES_URL', plugin_dir_url( __FILE__ ) );
 define( 'GT_RES_SETUP_VERSION', '1' );
 
 require_once GT_RES_DIR . 'includes/helpers.php';
+require_once GT_RES_DIR . 'includes/phone-codes.php';
 require_once GT_RES_DIR . 'includes/post-types.php';
 require_once GT_RES_DIR . 'includes/booking.php';
 require_once GT_RES_DIR . 'includes/shortcodes.php';
