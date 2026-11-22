@@ -224,8 +224,6 @@ add_shortcode( 'gt_contacto', function () {
 			<label>Celular / WhatsApp<input type="tel" name="gt_tel" maxlength="30"></label>
 			<label>Motivo
 				<select name="gt_motivo">
-					<option>Quiero reservar</option>
-					<option>Grupos y empresas</option>
 					<option>Quiero ser aliado (alojamiento, tour o restaurante)</option>
 					<option>Publicar un evento</option>
 					<option>Otro</option>
@@ -233,7 +231,7 @@ add_shortcode( 'gt_contacto', function () {
 			</label>
 		</div>
 		<label>Mensaje<textarea name="gt_mensaje" rows="5" required maxlength="3000"></textarea></label>
-		<label class="gt-check"><input type="checkbox" name="gt_datos" value="1" required> Autorizo el tratamiento de mis datos personales según la <a href="<?php echo esc_url( home_url( '/politica-de-privacidad/' ) ); ?>">política de privacidad</a>.</label>
+		<label class="gt-check"><input type="checkbox" name="gt_datos" value="1" required> <span>Autorizo el tratamiento de mis datos personales según la <a href="<?php echo esc_url( home_url( '/politica-de-privacidad/' ) ); ?>">política de privacidad</a>.</span></label>
 		<button type="submit" class="gt-btn">Enviar mensaje</button>
 	</form>
 	<?php
@@ -241,10 +239,10 @@ add_shortcode( 'gt_contacto', function () {
 } );
 
 function gt_handle_contacto() {
-	$back = wp_get_referer() ? wp_get_referer() : home_url( '/contacto/' );
-	$back = remove_query_arg( 'contacto', $back );
+	$back = wp_get_referer() ? wp_get_referer() : home_url( '/nosotros/' );
+	$back = remove_query_arg( 'contacto', strtok( $back, '#' ) );
 	if ( ! isset( $_POST['gt_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['gt_nonce'] ) ), 'gt_contacto' ) || ! empty( $_POST['gt_web'] ) ) {
-		wp_safe_redirect( add_query_arg( 'contacto', 'error', $back ) );
+		wp_safe_redirect( add_query_arg( 'contacto', 'error', $back ) . '#contacto' );
 		exit;
 	}
 	$nombre  = sanitize_text_field( wp_unslash( $_POST['gt_nombre'] ?? '' ) );
@@ -253,12 +251,12 @@ function gt_handle_contacto() {
 	$motivo  = sanitize_text_field( wp_unslash( $_POST['gt_motivo'] ?? '' ) );
 	$mensaje = sanitize_textarea_field( wp_unslash( $_POST['gt_mensaje'] ?? '' ) );
 	if ( ! $nombre || ! is_email( $email ) || ! $mensaje || empty( $_POST['gt_datos'] ) ) {
-		wp_safe_redirect( add_query_arg( 'contacto', 'error', $back ) );
+		wp_safe_redirect( add_query_arg( 'contacto', 'error', $back ) . '#contacto' );
 		exit;
 	}
 	$body = "Nombre: $nombre\nCorreo: $email\nCelular: $tel\nMotivo: $motivo\n\n$mensaje";
 	$ok   = wp_mail( get_option( 'admin_email' ), '[Girardota.com.co] ' . $motivo . ' — ' . $nombre, $body, array( 'Reply-To: ' . $nombre . ' <' . $email . '>' ) );
-	wp_safe_redirect( add_query_arg( 'contacto', $ok ? 'ok' : 'error', $back ) );
+	wp_safe_redirect( add_query_arg( 'contacto', $ok ? 'ok' : 'error', $back ) . '#contacto' );
 	exit;
 }
 add_action( 'admin_post_nopriv_gt_contacto', 'gt_handle_contacto' );

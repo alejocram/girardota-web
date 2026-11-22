@@ -39,9 +39,9 @@
 				<ul>
 					<li>WhatsApp: <a href="<?php echo esc_url( gt_wa() ); ?>" target="_blank" rel="noopener"><?php echo esc_html( gt_wa_display() ); ?></a></li>
 					<li>Girardota, Antioquia, Colombia</li>
-					<li><a href="<?php echo esc_url( home_url( '/contacto/' ) ); ?>">Escríbenos</a></li>
+					<li><a href="<?php echo esc_url( home_url( '/nosotros/#contacto' ) ); ?>">Escríbenos</a></li>
 				</ul>
-				<p style="margin-top:1rem;font-size:.88rem">¿Tienes un alojamiento, tour o restaurante? <a href="<?php echo esc_url( home_url( '/contacto/' ) ); ?>">Súmate como aliado →</a></p>
+				<p style="margin-top:1rem;font-size:.88rem">¿Tienes un alojamiento, tour o restaurante? <a href="<?php echo esc_url( home_url( '/nosotros/#contacto' ) ); ?>">Súmate como aliado →</a></p>
 			</div>
 		</div>
 		<div class="gt-footer__bottom">

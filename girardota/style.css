@@ -300,6 +300,7 @@ p { margin: 0 0 1em; }
 .gt-check { display: flex !important; gap: 10px; align-items: flex-start; font-weight: 400 !important; }
 .gt-check input { margin-top: 5px; }
 .gt-hp { position: absolute; left: -9999px; }
+#contacto { scroll-margin-top: 90px; }
 .gt-alert { padding: 14px 18px; border-radius: 12px; margin-bottom: 18px; }
 .gt-alert--ok { background: #e3f4e8; color: #1c5a32; }
 .gt-alert--error { background: #fde8e4; color: #8a2a17; }

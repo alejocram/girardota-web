@@ -168,7 +168,7 @@ function gt_fallback_menu() {
 		'eventos'      => 'Eventos',
 		'girardota'    => 'Conoce Girardota',
 		'noticias'     => 'Noticias',
-		'contacto'     => 'Contacto',
+		'nosotros'     => 'Nosotros',
 	);
 	echo '<ul>';
 	foreach ( $links as $slug => $label ) {

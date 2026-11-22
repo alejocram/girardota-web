@@ -55,3 +55,56 @@ add_action( 'init', function () {
 	update_option( 'gt_res_patch', 2 );
 	do_action( 'litespeed_purge_all' );
 }, 100 );
+
+/* v3: la sección de contacto pasa al final de "Nosotros" y se elimina la página "Contacto". */
+add_action( 'init', function () {
+	if ( (int) get_option( 'gt_res_patch', 0 ) >= 3 || ! function_exists( 'gt_contact_section_html' ) ) {
+		return;
+	}
+	kses_remove_filters(); // Conserva el HTML de las secciones al guardar desde una visita anónima.
+	$nos = get_page_by_path( 'nosotros' );
+	if ( $nos ) {
+		$c = $nos->post_content;
+		$c = str_replace( 'href="/contacto/"', 'href="#contacto"', $c );
+		if ( false === strpos( $c, 'id="contacto"' ) ) {
+			$c .= gt_blocks( array( gt_contact_section_html() ) );
+		}
+		wp_update_post( array( 'ID' => $nos->ID, 'post_content' => $c ) );
+	}
+	// Enlaces a la página antigua en las demás páginas.
+	foreach ( array( 'terminos-y-condiciones', 'politica-de-privacidad', 'politicas-de-reserva' ) as $slug ) {
+		$pg = get_page_by_path( $slug );
+		if ( $pg && false !== strpos( $pg->post_content, '/contacto/' ) ) {
+			wp_update_post( array( 'ID' => $pg->ID, 'post_content' => str_replace( 'href="/contacto/"', 'href="/nosotros/#contacto"', $pg->post_content ) ) );
+		}
+	}
+	$con = get_page_by_path( 'contacto' );
+	if ( $con ) {
+		// Menú principal: el enlace "Contacto" pasa a ser "Nosotros".
+		foreach ( wp_get_nav_menus() as $menu ) {
+			foreach ( (array) wp_get_nav_menu_items( $menu->term_id ) as $item ) {
+				if ( (int) $item->object_id === (int) $con->ID && 'page' === $item->object ) {
+					wp_update_nav_menu_item( $menu->term_id, $item->ID, array(
+						'menu-item-title'     => 'Nosotros',
+						'menu-item-object'    => 'page',
+						'menu-item-object-id' => $nos ? $nos->ID : 0,
+						'menu-item-type'      => 'post_type',
+						'menu-item-status'    => 'publish',
+						'menu-item-position'  => $item->menu_order,
+					) );
+				}
+			}
+		}
+		wp_trash_post( $con->ID );
+	}
+	update_option( 'gt_res_patch', 3 );
+	do_action( 'litespeed_purge_all' );
+}, 101 );
+
+/* La dirección antigua /contacto/ lleva a la sección de contacto en Nosotros. */
+add_action( 'template_redirect', function () {
+	if ( is_404() && 'contacto' === trim( (string) wp_parse_url( $_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH ), '/' ) ) {
+		wp_safe_redirect( home_url( '/nosotros/#contacto' ), 301 );
+		exit;
+	}
+} );

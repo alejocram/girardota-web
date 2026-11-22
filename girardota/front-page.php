@@ -147,7 +147,7 @@ if ( $news->have_posts() ) :
 			<p>Súmate a la plataforma y llega a más viajeros que buscan escapadas auténticas cerca de Medellín.</p>
 		</div>
 		<div class="gt-cta__actions">
-			<a class="gt-btn gt-btn--light" href="<?php echo esc_url( home_url( '/contacto/' ) ); ?>">Quiero ser aliado</a>
+			<a class="gt-btn gt-btn--light" href="<?php echo esc_url( home_url( '/nosotros/#contacto' ) ); ?>">Quiero ser aliado</a>
 			<a class="gt-btn gt-btn--ghost-light" href="<?php echo esc_url( gt_wa( 'Hola, quiero ser aliado de Girardota.com.co' ) ); ?>" target="_blank" rel="noopener">WhatsApp</a>
 		</div>
 	</div>
