@@ -109,3 +109,86 @@ add_action( 'template_redirect', function () {
 		exit;
 	}
 } );
+
+/* v4: reemplaza girardota@gmail.com por info@girardota.com.co en opciones, contenido, metadatos y usuarios. */
+function gt_replace_deep( $value, $from, $to ) {
+	if ( is_string( $value ) ) {
+		return str_ireplace( $from, $to, $value );
+	}
+	if ( is_array( $value ) ) {
+		foreach ( $value as $k => $v ) {
+			$value[ $k ] = gt_replace_deep( $v, $from, $to );
+		}
+	} elseif ( is_object( $value ) && ! ( $value instanceof __PHP_Incomplete_Class ) ) {
+		foreach ( get_object_vars( $value ) as $k => $v ) {
+			$value->$k = gt_replace_deep( $v, $from, $to );
+		}
+	}
+	return $value;
+}
+
+add_action( 'init', function () {
+	if ( (int) get_option( 'gt_res_patch', 0 ) >= 4 ) {
+		return;
+	}
+	global $wpdb;
+	$from = 'girardota@gmail.com';
+	$to   = 'info@girardota.com.co';
+	$like = '%' . $wpdb->esc_like( $from ) . '%';
+	$log  = array();
+	kses_remove_filters();
+
+	foreach ( $wpdb->get_col( $wpdb->prepare( "SELECT option_name FROM {$wpdb->options} WHERE option_value LIKE %s AND option_name NOT LIKE '\\_transient%%' AND option_name NOT LIKE '\\_site\\_transient%%'", $like ) ) as $name ) {
+		update_option( $name, gt_replace_deep( get_option( $name ), $from, $to ) );
+		$log[] = "opción: $name";
+	}
+	foreach ( $wpdb->get_results( $wpdb->prepare( "SELECT ID, post_type FROM {$wpdb->posts} WHERE post_content LIKE %s OR post_excerpt LIKE %s OR post_title LIKE %s", $like, $like, $like ) ) as $p ) {
+		$post = get_post( $p->ID );
+		$wpdb->update( $wpdb->posts, array(
+			'post_content' => str_ireplace( $from, $to, $post->post_content ),
+			'post_excerpt' => str_ireplace( $from, $to, $post->post_excerpt ),
+			'post_title'   => str_ireplace( $from, $to, $post->post_title ),
+		), array( 'ID' => $p->ID ) );
+		clean_post_cache( $p->ID );
+		$log[] = "contenido: {$p->post_type} #{$p->ID} ({$post->post_title})";
+	}
+	foreach ( $wpdb->get_results( $wpdb->prepare( "SELECT DISTINCT post_id, meta_key FROM {$wpdb->postmeta} WHERE meta_value LIKE %s", $like ) ) as $m ) {
+		foreach ( get_post_meta( $m->post_id, $m->meta_key ) as $old ) {
+			update_post_meta( $m->post_id, $m->meta_key, gt_replace_deep( $old, $from, $to ), $old );
+		}
+		$log[] = "metadato: #{$m->post_id} {$m->meta_key}";
+	}
+	foreach ( $wpdb->get_col( $wpdb->prepare( "SELECT ID FROM {$wpdb->users} WHERE user_email LIKE %s", $like ) ) as $uid ) {
+		if ( ! email_exists( $to ) ) {
+			wp_update_user( array( 'ID' => $uid, 'user_email' => $to ) );
+			$log[] = "usuario: #$uid (correo de la cuenta)";
+		} else {
+			$log[] = "usuario: #$uid NO cambiado (ya existe otra cuenta con $to)";
+		}
+	}
+	foreach ( $wpdb->get_results( $wpdb->prepare( "SELECT DISTINCT user_id, meta_key FROM {$wpdb->usermeta} WHERE meta_value LIKE %s", $like ) ) as $m ) {
+		update_user_meta( $m->user_id, $m->meta_key, gt_replace_deep( get_user_meta( $m->user_id, $m->meta_key, true ), $from, $to ) );
+		$log[] = "metadato de usuario: #{$m->user_id} {$m->meta_key}";
+	}
+	// Tablas propias de WooCommerce (pedidos HPOS), si existen.
+	foreach ( array( 'wc_orders' => array( 'billing_email' ), 'wc_order_addresses' => array( 'email' ) ) as $t => $cols ) {
+		$table = $wpdb->prefix . $t;
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $table ) ) !== $table ) {
+			continue;
+		}
+		foreach ( $cols as $c ) {
+			$n = $wpdb->query( $wpdb->prepare( "UPDATE $table SET $c = REPLACE($c, %s, %s) WHERE $c LIKE %s", $from, $to, $like ) ); // phpcs:ignore
+			if ( $n ) {
+				$log[] = "pedidos: $table.$c ($n)";
+			}
+		}
+	}
+	$log[] = 'correo del administrador ahora: ' . get_option( 'admin_email' );
+	$log[] = 'remitente WooCommerce ahora: ' . get_option( 'woocommerce_email_from_address' );
+	$no = get_option( 'woocommerce_new_order_settings' );
+	$log[] = 'destinatario "nuevo pedido" ahora: ' . ( is_array( $no ) && ! empty( $no['recipient'] ) ? $no['recipient'] : '(correo del administrador)' );
+	@file_put_contents( WP_CONTENT_DIR . '/uploads/gt-email-log.txt', gmdate( 'c' ) . "\n" . implode( "\n", $log ) . "\n" ); // phpcs:ignore
+	update_option( 'gt_res_patch', 4 );
+	wp_cache_flush();
+	do_action( 'litespeed_purge_all' );
+}, 102 );
