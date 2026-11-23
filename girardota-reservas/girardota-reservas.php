@@ -192,3 +192,44 @@ add_action( 'init', function () {
 	wp_cache_flush();
 	do_action( 'litespeed_purge_all' );
 }, 102 );
+
+/* v5: info@girardota.com.co como correo de contacto y de administración; WooCommerce sigue igual. */
+add_action( 'init', function () {
+	if ( (int) get_option( 'gt_res_patch', 0 ) >= 5 ) {
+		return;
+	}
+	$nuevo = 'info@girardota.com.co';
+	$antes = get_option( 'admin_email' );
+	// Los avisos de pedidos de WooCommerce usan por defecto el correo del administrador:
+	// se fijan en el correo actual para que no cambien con este ajuste.
+	if ( is_email( $antes ) && $antes !== $nuevo ) {
+		foreach ( array( 'woocommerce_new_order_settings', 'woocommerce_cancelled_order_settings', 'woocommerce_failed_order_settings' ) as $opt ) {
+			$cfg = (array) get_option( $opt, array() );
+			if ( empty( $cfg['recipient'] ) ) {
+				$cfg['recipient'] = $antes;
+				update_option( $opt, $cfg );
+			}
+		}
+		if ( ! get_option( 'woocommerce_email_from_address' ) ) {
+			update_option( 'woocommerce_email_from_address', $antes );
+		}
+	}
+	update_option( 'gt_email_contacto', $nuevo );
+	update_option( 'admin_email', $nuevo );
+	delete_option( 'new_admin_email' );
+	delete_option( 'adminhash' );
+
+	// Muestra el correo en la sección de contacto de Nosotros.
+	$nos = get_page_by_path( 'nosotros' );
+	if ( $nos && false === strpos( $nos->post_content, 'mailto:' . $nuevo ) ) {
+		$li = '<li><strong>Correo:</strong> <a href="mailto:' . $nuevo . '">' . $nuevo . '</a></li>';
+		$c  = preg_replace( '#(<li><strong>Instagram:</strong>)#', $li . '$1', $nos->post_content, 1 );
+		if ( $c && $c !== $nos->post_content ) {
+			global $wpdb;
+			$wpdb->update( $wpdb->posts, array( 'post_content' => $c ), array( 'ID' => $nos->ID ) );
+			clean_post_cache( $nos->ID );
+		}
+	}
+	update_option( 'gt_res_patch', 5 );
+	do_action( 'litespeed_purge_all' );
+}, 103 );

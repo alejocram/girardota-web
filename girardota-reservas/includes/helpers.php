@@ -21,6 +21,12 @@ function gt_wa_url( $message = '' ) {
 	return $url;
 }
 
+/** Correo que recibe el formulario de contacto y se muestra en el sitio. Editable en Ajustes > Generales. */
+function gt_contact_email() {
+	$e = sanitize_email( (string) get_option( 'gt_email_contacto', 'info@girardota.com.co' ) );
+	return is_email( $e ) ? $e : 'info@girardota.com.co';
+}
+
 function gt_cop( $amount ) {
 	return '$' . number_format( (float) $amount, 0, ',', '.' ) . ' COP';
 }
@@ -29,6 +35,10 @@ function gt_cop( $amount ) {
 add_action( 'admin_init', function () {
 	register_setting( 'general', 'gt_whatsapp', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 	register_setting( 'general', 'gt_whatsapp_display', array( 'sanitize_callback' => 'sanitize_text_field' ) );
+	register_setting( 'general', 'gt_email_contacto', array( 'sanitize_callback' => 'sanitize_email' ) );
+	add_settings_field( 'gt_email_contacto', 'Correo del formulario de contacto', function () {
+		echo '<input type="email" class="regular-text" name="gt_email_contacto" value="' . esc_attr( gt_contact_email() ) . '">';
+	}, 'general' );
 	add_settings_field( 'gt_whatsapp', 'WhatsApp de reservas (solo números, ej. 573007863624)', function () {
 		echo '<input type="text" class="regular-text" name="gt_whatsapp" value="' . esc_attr( get_option( 'gt_whatsapp', '573007863624' ) ) . '">';
 	}, 'general' );

@@ -297,7 +297,7 @@ function gt_handle_contacto() {
 	}
 	$cel  = $tel ? $tel . ' (WhatsApp: https://wa.me/' . ltrim( $tel, '+' ) . ')' : 'No indicado';
 	$body = "Nombre: $nombre\nCorreo: $email\nCelular: $cel\nMotivo: $motivo\n\n$mensaje";
-	$ok   = wp_mail( get_option( 'admin_email' ), '[Girardota.com.co] ' . $motivo . ' — ' . $nombre, $body, array( 'Reply-To: ' . $nombre . ' <' . $email . '>' ) );
+	$ok   = wp_mail( gt_contact_email(), '[Girardota.com.co] ' . $motivo . ' — ' . $nombre, $body, array( 'Reply-To: ' . $nombre . ' <' . $email . '>' ) );
 	wp_safe_redirect( add_query_arg( 'contacto', $ok ? 'ok' : 'error', $back ) . '#contacto' );
 	exit;
 }
